@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>你是哪种水果人格？🍓</title>
+<style>
+  :root{
+    --accent:#ff5f8f;
+    --accent2:#ffb062;
+    --light:#ffeef5;
+    --ink:#42322d;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(155deg,#fff8ee 0%,#ffedf3 42%,#eef5ff 100%);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  /* 背景漂浮水果 */
+  .bg-decor{position:fixed;inset:0;z-index:0;overflow:hidden}
+  .bg-decor span{
+    position:absolute;opacity:.16;user-select:none;
+    animation:drift 10s ease-in-out infinite;
+  }
+  @keyframes drift{
+    0%,100%{transform:translateY(0) rotate(-10deg) scale(1)}
+    50%{transform:translateY(-34px) rotate(10deg) scale(1.08)}
+  }
+
+  .app{
+    position:relative;z-index:1;
+    max-width:540px;margin:0 auto;
+    padding:clamp(20px,5vh,48px) 18px 40px;
+  }
+  .brand{
+    text-align:center;font-size:13px;font-weight:700;
+    letter-spacing:2px;color:#c98aa0;margin-bottom:16px;
+  }
+  .card{
+    background:rgba(255,255,255,.82);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-radius:30px;
+    padding:clamp(26px,6vw,42px) 24px;
+    box-shadow:0 24px 60px -18px rgba(255,110,150,.35);
+    border:1.5px solid rgba(255,255,255,.85);
+  }
+  .screen{display:none}
+  .screen.active{display:block;animation:screenIn .5s cubic-bezier(.2,.8,.2,1)}
+  @keyframes screenIn{
+    from{opacity:0;transform:translateY(18px) scale(.98)}
+    to{opacity:1;transform:none}
+  }
+
+  /* ===== 开始页 ===== */
+  .hero-fruits{
+    display:flex;flex-wrap:wrap;justify-content:center;gap:6px;
+    font-size:46px;margin:6px 0 18px;
+  }
+  .hero-fruits span{display:inline-block;animation:bob 2.6s ease-in-out infinite}
+  .hero-fruits span:nth-child(2n){animation-delay:.3s}
+  .hero-fruits span:nth-child(3n){animation-delay:.6s}
+  .hero-fruits span:nth-child(4n){animation-delay:.9s}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px) rotate(6deg)}}
+  .start-title{
+    text-align:center;font-size:clamp(26px,7vw,34px);font-weight:900;
+    line-height:1.3;margin:0 0 12px;
+    background:linear-gradient(120deg,#ff4d7e,#ff9a3c 60%,#8e5bb5);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .start-sub{
+    text-align:center;font-size:15px;line-height:1.9;color:#8a736b;margin:0 0 28px;
+  }
+  .start-sub b{color:#ff5f8f}
+  .btn{
+    display:block;width:100%;border:none;cursor:pointer;
+    font-family:inherit;font-weight:800;letter-spacing:1px;
+    border-radius:999px;padding:17px 24px;font-size:17px;
+    color:#fff;background:linear-gradient(120deg,var(--accent),var(--accent2));
+    box-shadow:0 12px 28px -8px var(--accent);
+    transition:transform .2s,box-shadow .2s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 34px -8px var(--accent)}
+  .btn.ghost{
+    background:#fff;color:var(--accent);
+    border:2px solid var(--accent);box-shadow:none;margin-top:12px;
+  }
+  .footnote{text-align:center;margin-top:22px;font-size:12px;color:#b8a29b}
+
+  /* ===== 答题页 ===== */
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .back{
+    border:none;background:none;font-family:inherit;font-size:13px;
+    color:#b08a95;cursor:pointer;padding:4px 8px;font-weight:700;
+  }
+  .back[hidden]{visibility:hidden}
+  .progress{flex:1;height:10px;background:#fde9f0;border-radius:999px;overflow:hidden}
+  .progress-fill{
+    height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .45s cubic-bezier(.2,.8,.2,1);
+  }
+  .counter{font-size:13px;font-weight:800;color:var(--accent);letter-spacing:1px;margin-bottom:10px}
+  .question{
+    font-size:clamp(19px,5vw,23px);font-weight:900;line-height:1.5;
+    margin:0 0 20px;
+  }
+  .options.locked{pointer-events:none}
+  .option{
+    display:flex;align-items:center;gap:12px;width:100%;
+    text-align:left;font-family:inherit;font-size:15.5px;line-height:1.5;
+    color:var(--ink);cursor:pointer;
+    background:#fff;border:2px solid #f6e3ea;border-radius:18px;
+    padding:15px 16px;margin:10px 0;
+    animation:optIn .5s both;
+    transition:transform .18s,border-color .18s,background .18s,box-shadow .18s;
+  }
+  .option:hover{border-color:var(--accent);transform:translateX(4px)}
+  .option.picked{
+    border-color:var(--accent);background:var(--light);
+    box-shadow:0 8px 22px -10px var(--accent);transform:scale(1.02);
+  }
+  @keyframes optIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .badge{
+    flex:none;width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:900;color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+  }
+
+  /* ===== 结果页 ===== */
+  .result-head{text-align:center}
+  .fruit-big{
+    font-size:96px;line-height:1;margin:4px 0 10px;
+    display:inline-block;animation:fruitPop .7s cubic-bezier(.2,1.4,.4,1), bob 2.6s ease-in-out .7s infinite;
+  }
+  @keyframes fruitPop{
+    0%{transform:scale(0) rotate(-40deg);opacity:0}
+    70%{transform:scale(1.2) rotate(8deg)}
+    100%{transform:scale(1) rotate(0);opacity:1}
+  }
+  .r-tag{font-size:13px;letter-spacing:3px;color:#a98;font-weight:700}
+  .r-name{
+    font-size:38px;font-weight:900;margin:4px 0 2px;
+    color:var(--accent);
+  }
+  .r-title{font-size:17px;font-weight:800;color:#6b5750}
+  .r-fit{
+    display:inline-block;margin-top:14px;padding:7px 18px;
+    border-radius:999px;font-size:14px;font-weight:800;
+    color:var(--accent);background:var(--light);
+  }
+  .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:20px 0 18px}
+  .chip{
+    font-size:13px;font-weight:700;padding:6px 14px;border-radius:999px;
+    color:var(--accent);background:var(--light);border:1px solid var(--accent);
+  }
+  .r-desc{
+    font-size:15px;line-height:1.95;margin:0 0 22px;
+    background:#fffaf6;border-radius:18px;padding:16px 18px;color:#6d5b54;
+  }
+  .compose h4,.match-box h4{font-size:14px;margin:0 0 12px;color:#9a847c;letter-spacing:1px}
+  .bar-row{display:flex;align-items:center;gap:10px;margin:9px 0}
+  .bar-label{width:76px;flex:none;font-size:13.5px;font-weight:700}
+  .bar-track{flex:1;height:12px;background:#f3e9e8;border-radius:999px;overflow:hidden}
+  .bar-fill{
+    height:100%;border-radius:999px;width:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .9s cubic-bezier(.2,.8,.2,1);
+  }
+  .bar-val{width:18px;flex:none;text-align:right;font-size:12px;font-weight:800;color:#b09a92}
+  .match-box{
+    margin-top:22px;padding:16px 18px;border-radius:18px;
+    background:var(--light);text-align:center;
+  }
+  .match-fruits{display:flex;justify-content:center;gap:14px;margin-top:6px}
+  .match-fruit{
+    background:#fff;border-radius:14px;padding:8px 14px;
+    font-size:14px;font-weight:800;
+    box-shadow:0 6px 16px -8px rgba(0,0,0,.15);
+  }
+  .match-fruit .mf{font-size:22px;display:block;margin-bottom:2px}
+  .result-actions{margin-top:26px}
+
+  /* 撒花 */
+  #confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+  #confetti span{
+    position:absolute;left:50%;top:38%;font-size:22px;
+    animation:fly 1.3s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes fly{
+    0%{transform:translate(-50%,-50%) scale(.4) rotate(0);opacity:1}
+    100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.25) rotate(380deg);opacity:0}
+  }
+  /* 提示 toast */
+  .toast{
+    position:fixed;left:50%;bottom:48px;transform:translate(-50%,20px);
+    background:rgba(60,40,45,.92);color:#fff;font-size:14px;font-weight:700;
+    padding:12px 22px;border-radius:999px;opacity:0;z-index:60;
+    transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+  <div class="bg-decor"></div>
+  <div id="confetti"></div>
+
+  <main class="app">
+    <div class="brand">🍓 水果人格研究所 · FUN TEST</div>
+
+    <!-- 开始页 -->
+    <section id="screen-start" class="screen active">
+      <div class="card">
+        <div class="hero-fruits">
+          <span>🍓</span><span>🍋</span><span>🍇</span><span>🫐</span>
+          <span>🥭</span><span>🍑</span><span>🍌</span><span>🍉</span>
+        </div>
+        <h1 class="start-title">你是哪种<br>水果人格？</h1>
+        <p class="start-sub">
+          <b>12 道小题 · 约 1 分钟</b><br>
+          没有对错，凭第一直觉选就好<br>
+          看看你的灵魂，究竟是哪一颗水果～
+        </p>
+        <button class="btn" id="startBtn">开始测试 🍹</button>
+      </div>
+      <p class="footnote">本测试纯属娱乐 · 祝你今天甜甜的</p>
+    </section>
+
+    <!-- 答题页 -->
+    <section id="screen-quiz" class="screen">
+      <div class="card">
+        <div class="topbar">
+          <button class="back" id="backBtn">← 上一题</button>
+          <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+        <div class="counter" id="counter"></div>
+        <h2 class="question" id="questionText"></h2>
+        <div class="options" id="optionsWrap"></div>
+      </div>
+    </section>
+
+    <!-- 结果页 -->
+    <section id="screen-result" class="screen">
+      <div class="card">
+        <div class="result-head">
+          <div class="fruit-big" id="rEmoji"></div>
+          <div class="r-tag">你的水果人格是</div>
+          <div class="r-name" id="rName"></div>
+          <div class="r-title" id="rTitle"></div>
+          <div class="r-fit" id="rFit"></div>
+        </div>
+        <div class="chips" id="rTraits"></div>
+        <p class="r-desc" id="rDesc"></p>
+
+        <div class="compose">
+          <h4>🍹 你的性格成分 TOP3</h4>
+          <div id="rBars"></div>
+        </div>
+
+        <div class="match-box">
+          <h4>💞 和你天生最搭的水果</h4>
+          <div class="match-fruits" id="rMatch"></div>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn" id="restartBtn">再测一次 ↺</button>
+          <button class="btn ghost" id="shareBtn">分享给朋友 📮</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ============ 8 种水果人格档案 ============ */
+const FRUITS = {
+  strawberry:{
+    emoji:'🍓', name:'草莓', title:'甜度爆表的小太阳',
+    theme:'#ff4d7e', theme2:'#ff9ebb', light:'#ffe3ee',
+    traits:['热情浪漫','表达力强','颜值控'],
+    desc:'你像草莓一样，外表鲜亮、一口爆汁。你天生自带感染力，是人群中最会制造心动的存在；热爱一切美好的事物，愿意为浪漫和仪式感买单。偶尔有点小敏感，但情绪来得快去得也快——甜，就完事了。'
+  },
+  watermelon:{
+    emoji:'🍉', name:'西瓜', title:'夏天最需要的捧场王',
+    theme:'#16a34a', theme2:'#63d48f', light:'#e3f6ea',
+    traits:['随和仗义','实在可靠','开心万岁'],
+    desc:'你是三伏天里那瓣最沙甜的西瓜——实在、解渴、让人放松。朋友有事第一个想到你，因为你永远仗义、永远捧场。你不爱勾心斗角，人生信条是“多大点事，开心最重要”。'
+  },
+  lemon:{
+    emoji:'🍋', name:'柠檬', title:'又酸又飒的灵魂玩家',
+    theme:'#e3a900', theme2:'#ffd84d', light:'#fff3cf',
+    traits:['独特犀利','独立有态度','冷幽默'],
+    desc:'你的灵魂酸度刚好，提神又醒脑。你拒绝随波逐流，审美和观点都很有一套；嘴上犀利不饶人，心里却软得很。不理解你的人觉得你难搞，懂你的人会疯狂上头。'
+  },
+  grape:{
+    emoji:'🍇', name:'葡萄', title:'精致迷人的神秘贵族',
+    theme:'#8e5bb5', theme2:'#c39be0', light:'#f2e8fb',
+    traits:['优雅神秘','品味在线','深情慢热'],
+    desc:'你成串生长，却始终保留一颗饱满而神秘的内核。你擅长社交，也享受独处；注重质感与仪式感，爱得深沉、审美在线。优雅是你的保护色，深情才是真面目。'
+  },
+  blueberry:{
+    emoji:'🫐', name:'蓝莓', title:'小小一颗，深不见底',
+    theme:'#4a6cf7', theme2:'#93a8ff', light:'#e7ecff',
+    traits:['冷静睿智','专注内省','细节控'],
+    desc:'你小小一颗，却越品越有深度。你习惯观察与思考，享受独处，内心世界比谁都辽阔。不鸣则已，一开口往往就是全场最有信息量的人——安静，是你的超能力。'
+  },
+  mango:{
+    emoji:'🥭', name:'芒果', title:'浓墨重彩的冒险家',
+    theme:'#ff7a00', theme2:'#ffb35c', light:'#ffefdb',
+    traits:['热烈勇敢','创造力爆棚','行动派'],
+    desc:'你色彩浓烈、香气逼人，是天生的行动派。想到就去做，热爱冒险与挑战，人生信条是“要活就活得浓墨重彩”。偶尔冲动闯点小祸，但你从不后悔。'
+  },
+  peach:{
+    emoji:'🍑', name:'桃子', title:'软乎乎的人间水蜜桃',
+    theme:'#ff8f7a', theme2:'#ffc0b3', light:'#ffeae4',
+    traits:['温柔共情','治愈体贴','好脾气'],
+    desc:'你外表软糯、内心清甜，是朋友身边的“情绪按摩仪”。你总能第一时间察觉别人的委屈，习惯性照顾全场情绪。小提醒：对自己，也记得这么温柔一点哦。'
+  },
+  banana:{
+    emoji:'🍌', name:'香蕉', title:'快乐的能量补给站',
+    theme:'#f0b400', theme2:'#ffd968', light:'#fff6d6',
+    traits:['阳光幽默','精力充沛','乐天派'],
+    desc:'你是口袋里那根能量棒，剥开全是快乐。你天生自带笑点和正能量，有你在的场子绝不冷场；你相信办法总比困难多，丧不过三秒就能原地复活。'
+  }
+};
+
+/* ============ 12 道题（每种水果恰好出现 6 次，计分均衡） ============ */
+const QUESTIONS = [
+  { q:'周末终于到了！你理想中的安排是？', opts:[
+    {t:'派对走起，认识新朋友才是正经事', f:'strawberry'},
+    {t:'三五好友，火锅烧烤安排上', f:'watermelon'},
+    {t:'宅家看书追剧，请勿打扰', f:'blueberry'},
+    {t:'去没去过的地方探险打卡', f:'mango'}
+  ]},
+  { q:'刚认识你的人，通常怎么形容你？', opts:[
+    {t:'精致会穿，自带距离感的魅力', f:'grape'},
+    {t:'爱笑好说话，自带亲切感', f:'banana'},
+    {t:'轻声细语，看起来就很好相处', f:'peach'},
+    {t:'有点酷，猜不透你在想什么', f:'lemon'}
+  ]},
+  { q:'打开你的衣柜，占比最多的是？', opts:[
+    {t:'粉色小裙子，甜度拉满', f:'strawberry'},
+    {t:'亮色卫衣运动鞋，舒服最重要', f:'banana'},
+    {t:'深色系简约款，质感说话', f:'grape'},
+    {t:'宽松棉麻，温柔莫兰迪色', f:'peach'}
+  ]},
+  { q:'团队合作时，你通常是哪个角色？', opts:[
+    {t:'气氛组组长，负责让大家开心', f:'banana'},
+    {t:'点子王，脑洞最大的那个', f:'mango'},
+    {t:'调和剂，照顾每个人的情绪', f:'peach'},
+    {t:'把关人，逻辑和细节交给我', f:'blueberry'}
+  ]},
+  { q:'深夜突然 emo，你会怎么办？', opts:[
+    {t:'发条仅自己可见的动态，配文艺歌词', f:'grape'},
+    {t:'打给闺蜜/兄弟，不吐不快', f:'strawberry'},
+    {t:'睡一觉，明天又是元气一天', f:'watermelon'},
+    {t:'摊开备忘录，把问题分析明白', f:'lemon'}
+  ]},
+  { q:'如果明天就能出发，你会选择哪里？', opts:[
+    {t:'热带海岛，阳光沙滩浪起来', f:'mango'},
+    {t:'安静小镇，咖啡馆里发发呆', f:'peach'},
+    {t:'霓虹大都市，逛街吃到扶墙', f:'strawberry'},
+    {t:'湖边森林小木屋，与世隔绝', f:'blueberry'}
+  ]},
+  { q:'以下哪种人最让你受不了？', opts:[
+    {t:'无聊还爱抬杠', f:'lemon'},
+    {t:'聚会放鸽子，说话不算数', f:'watermelon'},
+    {t:'整天唉声叹气，传播负能量', f:'banana'},
+    {t:'夸夸其谈，其实没什么内涵', f:'grape'}
+  ]},
+  { q:'免费送你一种超能力，你选？', opts:[
+    {t:'读心术，看透人心那点事', f:'blueberry'},
+    {t:'瞬间移动，立刻出发去冒险', f:'mango'},
+    {t:'快乐光环，让所有人都开心', f:'watermelon'},
+    {t:'时间暂停，独享安静世界', f:'lemon'}
+  ]},
+  { q:'朋友聚餐轮到点菜，你的画风是？', opts:[
+    {t:'菜单给我，不好吃算我的', f:'mango'},
+    {t:'随便随便，你们点啥我吃啥', f:'watermelon'},
+    {t:'先问一圈大家忌口，再推荐几个', f:'peach'},
+    {t:'点评头头是道，跟着我点不踩雷', f:'grape'}
+  ]},
+  { q:'压力大到爆表，你会怎么回血？', opts:[
+    {t:'约闺蜜逛街吃甜品，被爱治愈', f:'strawberry'},
+    {t:'一个人静静待着，谁也别理我', f:'blueberry'},
+    {t:'刷搞笑视频，笑着笑着就好了', f:'banana'},
+    {t:'写小作文或找人辩论一顿，输出即回血', f:'lemon'}
+  ]},
+  { q:'走进你的房间，最可能看到什么景象？', opts:[
+    {t:'色彩浓烈，海报摆件一大堆，个性拉满', f:'mango'},
+    {t:'乱中有序，东西多但我都找得到', f:'watermelon'},
+    {t:'香薰毛绒暖光灯，进门就被治愈', f:'peach'},
+    {t:'极简干净，每件物品都有自己的位置', f:'grape'}
+  ]},
+  { q:'在朋友群聊里，你通常是？', opts:[
+    {t:'表情包轰炸机，哪里有梗哪里有我', f:'banana'},
+    {t:'常年潜水，但每条都看，偶尔一针见血', f:'blueberry'},
+    {t:'秒回捧场王，夸人接龙从不冷场', f:'strawberry'},
+    {t:'冷不丁一句神吐槽，全群笑疯', f:'lemon'}
+  ]}
+];
+
+const MATCH = {
+  strawberry:['banana','peach'],
+  watermelon:['peach','strawberry'],
+  lemon:['blueberry','grape'],
+  grape:['blueberry','lemon'],
+  blueberry:['lemon','grape'],
+  mango:['banana','strawberry'],
+  peach:['watermelon','strawberry'],
+  banana:['strawberry','mango']
+};
+
+const LETTERS = ['A','B','C','D'];
+let qi = 0;
+let answers = [];
+
+const $ = id => document.getElementById(id);
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function start(){
+  qi = 0;
+  answers = [];
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = QUESTIONS[qi];
+  $('counter').textContent = String(qi+1).padStart(2,'0') + ' / ' + String(QUESTIONS.length).padStart(2,'0');
+  $('questionText').textContent = q.q;
+  $('progressFill').style.width = (qi / QUESTIONS.length * 100) + '%';
+  $('backBtn').hidden = qi === 0;
+
+  const wrap = $('optionsWrap');
+  wrap.classList.remove('locked');
+  wrap.innerHTML = '';
+  q.opts.forEach((o,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.style.animationDelay = (i*70) + 'ms';
+    btn.innerHTML = '<span class="badge">'+LETTERS[i]+'</span><span>'+o.t+'</span>';
+    btn.addEventListener('click',()=>choose(o.f,btn));
+    wrap.appendChild(btn);
+  });
+}
+
+function choose(fruit, el){
+  answers[qi] = fruit;
+  $('progressFill').style.width = ((qi+1) / QUESTIONS.length * 100) + '%';
+  document.querySelectorAll('.option').forEach(b=>b.classList.remove('picked'));
+  el.classList.add('picked');
+  $('optionsWrap').classList.add('locked');
+  setTimeout(()=>{
+    qi++;
+    if(qi < QUESTIONS.length){ renderQuestion(); }
+    else{ renderResult(); }
+  }, 340);
+}
+
+function goBack(){
+  if(qi > 0){ qi--; renderQuestion(); }
+}
+
+function renderResult(){
+  // 计分
+  const scores = {};
+  Object.keys(FRUITS).forEach(k=>scores[k]=0);
+  answers.forEach(a=>{ if(a) scores[a]++; });
+  const ranked = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const [topId, topScore] = ranked[0];
+  const f = FRUITS[topId];
+
+  // 主题色
+  const sec = $('screen-result');
+  sec.style.setProperty('--accent', f.theme);
+  sec.style.setProperty('--accent2', f.theme2);
+  sec.style.setProperty('--light', f.light);
+
+  $('rEmoji').textContent = f.emoji;
+  $('rName').textContent = f.name + '人格';
+  $('rTitle').textContent = f.title;
+  // 契合度按该水果在题库中可被选中的总次数动态归一化（60%~95%）
+  const maxPossible = QUESTIONS.reduce((n,qq)=> n + qq.opts.filter(o=>o.f===topId).length, 0);
+  const fit = 60 + Math.round((topScore / maxPossible) * 35);
+  $('rFit').textContent = '灵魂契合度 ' + fit + '%';
+
+  $('rTraits').innerHTML = f.traits.map(t=>'<span class="chip">'+t+'</span>').join('');
+  $('rDesc').textContent = f.desc;
+
+  // TOP3 成分条
+  const top3 = ranked.slice(0,3);
+  const max = top3[0][1] || 1;
+  $('rBars').innerHTML = top3.map(([id,sc])=>{
+    const pct = Math.max(sc>0?8:0, sc/max*100);
+    return '<div class="bar-row">'
+      + '<span class="bar-label">'+FRUITS[id].emoji+' '+FRUITS[id].name+'</span>'
+      + '<div class="bar-track"><div class="bar-fill" data-w="'+pct+'"></div></div>'
+      + '<span class="bar-val">'+sc+'</span>'
+      + '</div>';
+  }).join('');
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.bar-fill').forEach(b=>{ b.style.width = b.dataset.w + '%'; });
+  });
+
+  // 最搭水果
+  $('rMatch').innerHTML = MATCH[topId].map(id=>
+    '<div class="match-fruit"><span class="mf">'+FRUITS[id].emoji+'</span>'+FRUITS[id].name+'</div>'
+  ).join('');
+
+  showScreen('screen-result');
+  burst(f.emoji);
+}
+
+/* 撒花动画 */
+function burst(emoji){
+  const layer = $('confetti');
+  layer.innerHTML = '';
+  const extras = ['✨','🎉','💫','🌟'];
+  for(let i=0;i<26;i++){
+    const s = document.createElement('span');
+    s.textContent = i%3===0 ? emoji : extras[i%extras.length];
+    const ang = Math.random()*Math.PI*2;
+    const dist = 90 + Math.random()*170;
+    s.style.setProperty('--x', Math.cos(ang)*dist + 'px');
+    s.style.setProperty('--y', (Math.sin(ang)*dist - 70) + 'px');
+    s.style.animationDelay = (Math.random()*0.25) + 's';
+    layer.appendChild(s);
+  }
+  setTimeout(()=>{ layer.innerHTML=''; }, 1800);
+}
+
+/* 分享 */
+function share(){
+  const name = $('rName').textContent;
+  const emoji = $('rEmoji').textContent;
+  const text = '我的水果人格是「'+emoji+' '+name+'」！8道题测出你的灵魂水果，你也来玩玩吧～';
+  const url = location.href;
+  if(navigator.share){
+    navigator.share({title:'水果人格测试', text, url}).catch(()=>{});
+  }else{
+    const full = text + ' ' + url;
+    const done = ()=>showToast('结果已复制，快去发给朋友吧 📮');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(full).then(done).catch(()=>fallbackCopy(full,done));
+    }else{
+      fallbackCopy(full,done);
+    }
+  }
+}
+function fallbackCopy(text,cb){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');cb();}catch(e){showToast('复制失败，请截图分享哦');}
+  document.body.removeChild(ta);
+}
+let toastTimer;
+function showToast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* 背景漂浮水果 */
+(function decor(){
+  const EMOJIS=['🍓','🍋','🍇','🫐','🥭','🍑','🍌','🍉'];
+  const box=document.querySelector('.bg-decor');
+  for(let i=0;i<14;i++){
+    const s=document.createElement('span');
+    s.textContent=EMOJIS[i%EMOJIS.length];
+    s.style.left=Math.random()*100+'vw';
+    s.style.top=Math.random()*100+'vh';
+    s.style.fontSize=(20+Math.random()*34)+'px';
+    s.style.animationDelay=(-Math.random()*8)+'s';
+    s.style.animationDuration=(7+Math.random()*8)+'s';
+    box.appendChild(s);
+  }
+})();
+
+$('startBtn').addEventListener('click',start);
+$('restartBtn').addEventListener('click',()=>showScreen('screen-start'));
+$('backBtn').addEventListener('click',goBack);
+$('shareBtn').addEventListener('click',share);
+</script>
+</body>
+</html>
