@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水果人格测试 · 后台统计</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:#3d3033;background:#f7f3f0;min-height:100vh;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+  .top{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:10px;margin-bottom:18px;
+  }
+  .brand{font-weight:900;font-size:19px}
+  .brand small{font-weight:700;font-size:12px;color:#b39a92;margin-left:8px}
+  .top-actions{display:flex;gap:8px}
+  .mini-btn{
+    border:1.5px solid #e3d4cf;background:#fff;color:#8a6b74;
+    border-radius:999px;padding:7px 16px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+  }
+  .mini-btn:hover{border-color:#ff5f8f;color:#ff5f8f}
+  .mini-btn.primary{background:#ff5f8f;border-color:#ff5f8f;color:#fff}
+
+  .card{
+    background:#fff;border-radius:20px;padding:22px;
+    box-shadow:0 10px 30px -16px rgba(120,70,80,.25);
+    margin-bottom:16px;
+  }
+  .card h3{margin:0 0 14px;font-size:16px}
+  .card h3 span{color:#b39a92;font-size:12.5px;font-weight:700;margin-left:8px}
+
+  /* 登录 */
+  .login-box{max-width:380px;margin:12vh auto 0;text-align:center}
+  .login-box .logo{font-size:52px;margin-bottom:8px}
+  .login-box h2{margin:0 0 6px;font-size:22px}
+  .login-box p{color:#a08b85;font-size:13.5px;margin:0 0 22px}
+  .login-box input{
+    width:100%;padding:14px 16px;font-size:15px;border:2px solid #f0e4e0;
+    border-radius:14px;outline:none;font-family:inherit;margin-bottom:12px;
+  }
+  .login-box input:focus{border-color:#ff5f8f}
+  .login-err{color:#e6456b;font-size:13px;min-height:18px;margin-bottom:8px;font-weight:700}
+
+  /* 概览数字 */
+  .overview{display:flex;gap:12px;flex-wrap:wrap}
+  .stat{
+    flex:1;min-width:140px;border-radius:16px;padding:18px 20px;
+    background:linear-gradient(135deg,#fff5f8,#fff);
+    border:1px solid #ffe3ee;
+  }
+  .stat .num{font-size:30px;font-weight:900;color:#ff4d7e}
+  .stat .lbl{font-size:13px;color:#a08b85;font-weight:700;margin-top:2px}
+
+  /* 分布条 */
+  .dist-row{display:flex;align-items:center;gap:10px;margin:9px 0}
+  .dist-name{width:120px;flex:none;font-size:14px;font-weight:700}
+  .dist-track{flex:1;height:18px;background:#f6efec;border-radius:999px;overflow:hidden}
+  .dist-fill{
+    height:100%;border-radius:999px;display:flex;align-items:center;
+    padding-left:8px;color:#fff;font-size:11px;font-weight:800;white-space:nowrap;
+    width:0;transition:width .8s cubic-bezier(.2,.8,.2,1);
+  }
+  .dist-val{width:92px;flex:none;text-align:right;font-size:12.5px;color:#9a857f;font-weight:700}
+
+  /* 题目统计 */
+  .q-block{margin-bottom:18px}
+  .q-title{font-size:14px;font-weight:800;margin:0 0 8px;line-height:1.5}
+  .opt-row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12.5px}
+  .opt-letter{
+    flex:none;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:900;
+    color:#fff;background:#d8c3bd;display:flex;align-items:center;justify-content:center;
+  }
+  .opt-text{flex:1;color:#6f5d58;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt-track{width:90px;flex:none;height:8px;background:#f6efec;border-radius:99px;overflow:hidden}
+  .opt-fill{height:100%;background:#ffb062;border-radius:99px;width:0;transition:width .8s}
+  .opt-val{width:66px;flex:none;text-align:right;color:#9a857f;font-weight:700}
+  details.qs{margin-top:6px}
+  details.qs summary{
+    cursor:pointer;font-size:13.5px;font-weight:800;color:#ff5f8f;
+    list-style:none;padding:8px 0;user-select:none;
+  }
+  details.qs summary::before{content:'▸ '}
+  details.qs[open] summary::before{content:'▾ '}
+
+  /* 记录表 */
+  .table-scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;white-space:nowrap}
+  th,td{padding:8px 10px;text-align:center;border-bottom:1px solid #f4ece9}
+  th{color:#a08b85;font-weight:800;background:#faf7f5;position:sticky;top:0}
+  td.time{text-align:left;color:#8a7872}
+  td.result{font-weight:800}
+  .cell{
+    display:inline-flex;width:24px;height:24px;border-radius:50%;
+    align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;
+  }
+  .empty{text-align:center;color:#b39a92;padding:50px 0;font-size:14px}
+  .updated{font-size:12px;color:#b39a92;margin-top:10px;text-align:right}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 登录 -->
+  <div id="loginView" class="login-box">
+    <div class="card">
+      <div class="logo">🍓🔒</div>
+      <h2>水果测试 · 后台</h2>
+      <p>输入管理密码查看测试数据与统计</p>
+      <input type="password" id="pwInput" placeholder="管理密码" autocomplete="current-password">
+      <div class="login-err" id="loginErr"></div>
+      <button class="mini-btn primary" id="loginBtn" style="width:100%;padding:13px;font-size:15px;border-radius:14px;">进入后台</button>
+    </div>
+  </div>
+
+  <!-- 后台 -->
+  <div id="dashView" class="hidden">
+    <div class="top">
+      <div class="brand">🍓 水果测试后台<small>匿名数据 · 仅你可见</small></div>
+      <div class="top-actions">
+        <button class="mini-btn" id="refreshBtn">刷新</button>
+        <button class="mini-btn" id="exportBtn">导出 Excel(CSV)</button>
+        <button class="mini-btn" id="logoutBtn">退出</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="overview">
+        <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">总参与人次</div></div>
+        <div class="stat"><div class="num" id="statToday">0</div><div class="lbl">今日新增</div></div>
+        <div class="stat"><div class="num" id="statTop">—</div><div class="lbl">最多人格</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🍉 八种水果人格分布</h3>
+      <div id="fruitDist"></div>
+    </div>
+
+    <div class="card">
+      <h3>📊 每道题的选择分布<span>看大家更吃哪种生活方式</span></h3>
+      <details class="qs" id="qStatsDetails" open>
+        <summary>收起 / 展开题目明细</summary>
+        <div id="qStats" style="margin-top:10px"></div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h3>📋 全部答题明细<span>悬停字母可看选项原文</span></h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">时间</th>
+              <th>结果</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+      <div class="updated" id="updatedAt"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ====== 部署 Worker 后把这里改成你的 Worker 地址（末尾不带斜杠） ====== */
+const API_BASE = 'https://fun-personality-test.liujunyangbobby.workers.dev';
+const PW_KEY = 'ft_admin_pw';
+
+/* ====== 与测试页保持一致的题库（用于统计展示和 CSV 导出） ====== */
+const FRUITS = {
+  strawberry:{emoji:'🍓',name:'草莓',color:'#ff4d7e'},
+  watermelon:{emoji:'🍉',name:'西瓜',color:'#16a34a'},
+  lemon:{emoji:'🍋',name:'柠檬',color:'#e3a900'},
+  grape:{emoji:'🍇',name:'葡萄',color:'#8e5bb5'},
+  blueberry:{emoji:'🫐',name:'蓝莓',color:'#4a6cf7'},
+  mango:{emoji:'🥭',name:'芒果',color:'#ff7a00'},
+  peach:{emoji:'🍑',name:'桃子',color:'#ff8f7a'},
+  banana:{emoji:'🍌',name:'香蕉',color:'#f0b400'}
+};
+const FRUIT_ORDER = ['strawberry','watermelon','lemon','grape','blueberry','mango','peach','banana'];
+const LETTERS = ['A','B','C','D'];
+
+const QUESTIONS = [
+  { q:'周末终于到了！你理想中的安排是？', opts:[
+    {t:'派对走起，认识新朋友才是正经事', f:'strawberry'},
+    {t:'三五好友，火锅烧烤安排上', f:'watermelon'},
+    {t:'宅家看书追剧，请勿打扰', f:'blueberry'},
+    {t:'去没去过的地方探险打卡', f:'mango'}
+  ]},
+  { q:'刚认识你的人，通常怎么形容你？', opts:[
+    {t:'精致会穿，自带距离感的魅力', f:'grape'},
+    {t:'爱笑好说话，自带亲切感', f:'banana'},
+    {t:'轻声细语，看起来就很好相处', f:'peach'},
+    {t:'有点酷，猜不透你在想什么', f:'lemon'}
+  ]},
+  { q:'打开你的衣柜，占比最多的是？', opts:[
+    {t:'粉色小裙子，甜度拉满', f:'strawberry'},
+    {t:'亮色卫衣运动鞋，舒服最重要', f:'banana'},
+    {t:'深色系简约款，质感说话', f:'grape'},
+    {t:'宽松棉麻，温柔莫兰迪色', f:'peach'}
+  ]},
+  { q:'团队合作时，你通常是哪个角色？', opts:[
+    {t:'气氛组组长，负责让大家开心', f:'banana'},
+    {t:'点子王，脑洞最大的那个', f:'mango'},
+    {t:'调和剂，照顾每个人的情绪', f:'peach'},
+    {t:'把关人，逻辑和细节交给我', f:'blueberry'}
+  ]},
+  { q:'深夜突然 emo，你会怎么办？', opts:[
+    {t:'发条仅自己可见的动态，配文艺歌词', f:'grape'},
+    {t:'打给闺蜜/兄弟，不吐不快', f:'strawberry'},
+    {t:'睡一觉，明天又是元气一天', f:'watermelon'},
+    {t:'摊开备忘录，把问题分析明白', f:'lemon'}
+  ]},
+  { q:'如果明天就能出发，你会选择哪里？', opts:[
+    {t:'热带海岛，阳光沙滩浪起来', f:'mango'},
+    {t:'安静小镇，咖啡馆里发发呆', f:'peach'},
+    {t:'霓虹大都市，逛街吃到扶墙', f:'strawberry'},
+    {t:'湖边森林小木屋，与世隔绝', f:'blueberry'}
+  ]},
+  { q:'以下哪种人最让你受不了？', opts:[
+    {t:'无聊还爱抬杠', f:'lemon'},
+    {t:'聚会放鸽子，说话不算数', f:'watermelon'},
+    {t:'整天唉声叹气，传播负能量', f:'banana'},
+    {t:'夸夸其谈，其实没什么内涵', f:'grape'}
+  ]},
+  { q:'免费送你一种超能力，你选？', opts:[
+    {t:'读心术，看透人心那点事', f:'blueberry'},
+    {t:'瞬间移动，立刻出发去冒险', f:'mango'},
+    {t:'快乐光环，让所有人都开心', f:'watermelon'},
+    {t:'时间暂停，独享安静世界', f:'lemon'}
+  ]},
+  { q:'朋友聚餐轮到点菜，你的画风是？', opts:[
+    {t:'菜单给我，不好吃算我的', f:'mango'},
+    {t:'随便随便，你们点啥我吃啥', f:'watermelon'},
+    {t:'先问一圈大家忌口，再推荐几个', f:'peach'},
+    {t:'点评头头是道，跟着我点不踩雷', f:'grape'}
+  ]},
+  { q:'压力大到爆表，你会怎么回血？', opts:[
+    {t:'约闺蜜逛街吃甜品，被爱治愈', f:'strawberry'},
+    {t:'一个人静静待着，谁也别理我', f:'blueberry'},
+    {t:'刷搞笑视频，笑着笑着就好了', f:'banana'},
+    {t:'写小作文或找人辩论一顿，输出即回血', f:'lemon'}
+  ]},
+  { q:'走进你的房间，最可能看到什么景象？', opts:[
+    {t:'色彩浓烈，海报摆件一大堆，个性拉满', f:'mango'},
+    {t:'乱中有序，东西多但我都找得到', f:'watermelon'},
+    {t:'香薰毛绒暖光灯，进门就被治愈', f:'peach'},
+    {t:'极简干净，每件物品都有自己的位置', f:'grape'}
+  ]},
+  { q:'在朋友群聊里，你通常是？', opts:[
+    {t:'表情包轰炸机，哪里有梗哪里有我', f:'banana'},
+    {t:'常年潜水，但每条都看，偶尔一针见血', f:'blueberry'},
+    {t:'秒回捧场王，夸人接龙从不冷场', f:'strawberry'},
+    {t:'冷不丁一句神吐槽，全群笑疯', f:'lemon'}
+  ]}
+];
+
+const $ = id => document.getElementById(id);
+let RECORDS = [];
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtTime(iso){
+  const d = new Date(iso + (iso.endsWith('Z') ? '' : 'Z'));
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+/* ---------- 登录 ---------- */
+async function login(password){
+  $('loginErr').textContent = '';
+  try{
+    const res = await fetch(API_BASE.replace(/\/$/,'')+'/api/admin', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Admin-Password':password},
+      body:'{}'
+    });
+    const data = await res.json();
+    if(res.ok && data.ok){
+      sessionStorage.setItem(PW_KEY, password);
+      RECORDS = data.records;
+      showDash();
+    }else{
+      $('loginErr').textContent = data.error || '登录失败';
+    }
+  }catch(e){
+    $('loginErr').textContent = '连不上数据服务，请检查网络或 Worker 地址';
+  }
+}
+
+function showDash(){
+  $('loginView').classList.add('hidden');
+  $('dashView').classList.remove('hidden');
+  render();
+}
+function logout(){
+  sessionStorage.removeItem(PW_KEY);
+  $('dashView').classList.add('hidden');
+  $('loginView').classList.remove('hidden');
+  $('pwInput').value = '';
+}
+
+/* ---------- 渲染 ---------- */
+function parseAnswers(r){
+  try{ return JSON.parse(r.answers); }catch(e){ return []; }
+}
+
+function render(){
+  const total = RECORDS.length;
+  $('statTotal').textContent = total;
+
+  // 今日新增（按本地日期）
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayCount = RECORDS.filter(r => new Date(r.created_at + 'Z') >= today).length;
+  $('statToday').textContent = todayCount;
+
+  if(!total){
+    $('fruitDist').innerHTML = '<div class="empty">还没有任何人提交，把测试链接发出去吧～</div>';
+    $('qStats').innerHTML = '';
+    $('recordsBody').innerHTML = '';
+    $('statTop').textContent = '—';
+    $('updatedAt').textContent = '';
+    return;
+  }
+
+  // 水果人格分布
+  const counts = {};
+  FRUIT_ORDER.forEach(f => counts[f] = 0);
+  RECORDS.forEach(r => { if(counts[r.result] !== undefined) counts[r.result]++; });
+  const sorted = FRUIT_ORDER.slice().sort((a,b)=>counts[b]-counts[a]);
+  $('statTop').innerHTML = FRUITS[sorted[0]].emoji + ' ' + FRUITS[sorted[0]].name;
+  $('fruitDist').innerHTML = sorted.map(id=>{
+    const c = counts[id], pct = (c/total*100);
+    const f = FRUITS[id];
+    return '<div class="dist-row">'
+      + '<div class="dist-name">'+f.emoji+' '+f.name+'</div>'
+      + '<div class="dist-track"><div class="dist-fill" data-w="'+pct+'" style="background:'+f.color+'">'
+      + (pct>=12 ? pct.toFixed(0)+'%' : '') + '</div></div>'
+      + '<div class="dist-val">'+c+' 人 · '+pct.toFixed(1)+'%</div>'
+      + '</div>';
+  }).join('');
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.dist-fill').forEach(el=>{ el.style.width = Math.max(el.dataset.w,2)+'%'; });
+    document.querySelectorAll('.opt-fill').forEach(el=>{ el.style.width = el.dataset.w+'%'; });
+  });
+
+  // 每题分布
+  $('qStats').innerHTML = QUESTIONS.map((q,qi)=>{
+    const oc = [0,0,0,0];
+    RECORDS.forEach(r=>{
+      const a = parseAnswers(r)[qi];
+      const idx = q.opts.findIndex(o=>o.f===a);
+      if(idx>-1) oc[idx]++;
+    });
+    const order = [0,1,2,3].sort((a,b)=>oc[b]-oc[a]);
+    const rows = order.map(i=>{
+      const f = FRUITS[q.opts[i].f];
+      const pct = total ? oc[i]/total*100 : 0;
+      return '<div class="opt-row">'
+        + '<span class="opt-letter" style="background:'+f.color+'">'+LETTERS[i]+'</span>'
+        + '<span class="opt-text" title="'+esc(q.opts[i].t)+'">'+esc(q.opts[i].t)+'</span>'
+        + '<span class="opt-track"><span class="opt-fill" data-w="'+pct+'" style="background:'+f.color+'"></span></span>'
+        + '<span class="opt-val">'+oc[i]+' · '+pct.toFixed(0)+'%</span>'
+        + '</div>';
+    }).join('');
+    return '<div class="q-block"><div class="q-title">Q'+(qi+1)+'. '+esc(q.q)+'</div>'+rows+'</div>';
+  }).join('');
+
+  // 明细表（倒序，最新在前）
+  $('recordsBody').innerHTML = RECORDS.map(r=>{
+    const a = parseAnswers(r);
+    const f = FRUITS[r.result];
+    const cells = QUESTIONS.map((q,qi)=>{
+      const chosen = a[qi];
+      const idx = q.opts.findIndex(o=>o.f===chosen);
+      if(idx<0 || !FRUITS[chosen]) return '<td><span class="cell" style="background:#ddd">–</span></td>';
+      const cf = FRUITS[chosen];
+      const optText = q.opts[idx].t;
+      return '<td><span class="cell" style="background:'+cf.color+'" title="Q'+(qi+1)+' '+LETTERS[idx]+'. '+esc(optText)+'">'+LETTERS[idx]+'</span></td>';
+    }).join('');
+    return '<tr><td class="time">'+fmtTime(r.created_at)+'</td>'
+      + '<td class="result" style="color:'+(f?f.color:'#999')+'">'+(f?f.emoji+' '+f.name:'?')+'</td>'
+      + cells + '</tr>';
+  }).join('');
+
+  // 补表头 Q1..Q12（一次生成）
+  buildTableHead();
+
+  $('updatedAt').textContent = '数据更新于 ' + new Date().toLocaleString('zh-CN') + ' · 最多显示最近 2000 条';
+}
+
+let headBuilt = false;
+function buildTableHead(){
+  if(headBuilt) return;
+  const thead = document.querySelector('table thead tr');
+  QUESTIONS.forEach((q,i)=>{
+    const th = document.createElement('th');
+    th.textContent = 'Q'+(i+1);
+    th.title = q.q;
+    thead.appendChild(th);
+  });
+  headBuilt = true;
+}
+
+/* ---------- 导出 CSV（Excel 可直接打开） ---------- */
+function exportCSV(){
+  if(!RECORDS.length) return;
+  const head = ['提交时间','最终人格'].concat(QUESTIONS.map((q,i)=>'Q'+(i+1)+'.'+q.q));
+  const lines = [head];
+  RECORDS.slice().reverse().forEach(r=>{
+    const a = parseAnswers(r);
+    const row = [fmtTime(r.created_at), FRUITS[r.result] ? FRUITS[r.result].name : r.result];
+    QUESTIONS.forEach((q,qi)=>{
+      const idx = q.opts.findIndex(o=>o.f===a[qi]);
+      row.push(idx>-1 ? LETTERS[idx]+'. '+q.opts[idx].t : '');
+    });
+    lines.push(row);
+  });
+  const csv = lines.map(row=>row.map(c=>{
+    c = String(c==null?'':c).replace(/"/g,'""');
+    return /[",\n]/.test(c) ? '"'+c+'"' : c;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '水果人格测试数据_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ---------- 事件 ---------- */
+$('loginBtn').addEventListener('click',()=>{
+  const pw = $('pwInput').value.trim();
+  if(pw) login(pw);
+});
+$('pwInput').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginBtn').click(); });
+$('logoutBtn').addEventListener('click',logout);
+$('exportBtn').addEventListener('click',exportCSV);
+$('refreshBtn').addEventListener('click',async()=>{
+  const pw = sessionStorage.getItem(PW_KEY);
+  if(pw) await login(pw);
+});
+
+/* 自动登录（本标签页会话内） */
+(function autoLogin(){
+  const pw = sessionStorage.getItem(PW_KEY);
+  if(pw){ $('pwInput').value = pw; login(pw); }
+})();
+</script>
+</body>
+</html>

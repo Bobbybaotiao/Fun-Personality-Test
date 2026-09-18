@@ -1,0 +1,12 @@
+{
+  // Cloudflare Worker 配置：静态网页（public/）+ 数据接口（worker.js）
+  // 名字必须和你在 Cloudflare 创建的项目一致
+  "name": "fun-personality-test",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-18",
+  "assets": {
+    // public 里的 index.html、admin.html 直接作为网页对外访问
+    "directory": "./public"
+  }
+  // D1 数据库（DB）和后台密码（ADMIN_PASSWORD）在 Cloudflare 控制台页面上绑定，不写在这里
+}
