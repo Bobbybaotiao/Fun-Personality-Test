@@ -139,6 +139,19 @@ export default {
         }
 
         await ensureTable(env);
+
+        // action=delete：按 id 删除单条（后台用）
+        let body = {};
+        try { body = await request.json(); } catch { body = {}; }
+        if (body.action === 'delete') {
+          const delId = String(body.id || '');
+          if (!/^[a-zA-Z0-9_-]{8,64}$/.test(delId)) {
+            return json({ ok: false, error: 'id 无效' }, 400);
+          }
+          await env.DB.prepare('DELETE FROM submissions WHERE id = ?').bind(delId).run();
+          return json({ ok: true });
+        }
+
         const records = await env.DB.prepare(
           `SELECT id, result, answers, created_at
            FROM submissions

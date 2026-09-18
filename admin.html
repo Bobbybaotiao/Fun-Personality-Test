@@ -101,6 +101,11 @@
   }
   .empty{text-align:center;color:#b39a92;padding:50px 0;font-size:14px}
   .updated{font-size:12px;color:#b39a92;margin-top:10px;text-align:right}
+  .del-btn{
+    border:1px solid #f0d2d2;background:#fff;color:#d96a6a;border-radius:8px;
+    font-size:11.5px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:inherit;
+  }
+  .del-btn:hover{background:#fff0f0}
   .hidden{display:none}
 </style>
 </head>
@@ -159,6 +164,7 @@
             <tr>
               <th style="text-align:left">时间</th>
               <th>结果</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody id="recordsBody"></tbody>
@@ -388,10 +394,15 @@ function render(){
       const optText = q.opts[idx].t;
       return '<td><span class="cell" style="background:'+cf.color+'" title="Q'+(qi+1)+' '+LETTERS[idx]+'. '+esc(optText)+'">'+LETTERS[idx]+'</span></td>';
     }).join('');
-    return '<tr><td class="time">'+fmtTime(r.created_at)+'</td>'
+    return '<tr id="row-'+esc(r.id)+'"><td class="time">'+fmtTime(r.created_at)+'</td>'
       + '<td class="result" style="color:'+(f?f.color:'#999')+'">'+(f?f.emoji+' '+f.name:'?')+'</td>'
-      + cells + '</tr>';
+      + cells
+      + '<td><button class="del-btn" data-id="'+esc(r.id)+'">删除</button></td>'
+      + '</tr>';
   }).join('');
+  document.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>deleteRecord(btn.dataset.id));
+  });
 
   // 补表头 Q1..Q12（一次生成）
   buildTableHead();
@@ -410,6 +421,28 @@ function buildTableHead(){
     thead.appendChild(th);
   });
   headBuilt = true;
+}
+
+/* ---------- 删除单条记录 ---------- */
+async function deleteRecord(id){
+  if(!confirm('确定删除这条记录吗？')) return;
+  const pw = sessionStorage.getItem(PW_KEY);
+  try{
+    const res = await fetch(API_BASE.replace(/\/$/,'')+'/api/admin', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Admin-Password':pw},
+      body:JSON.stringify({action:'delete', id})
+    });
+    const data = await res.json();
+    if(data.ok){
+      RECORDS = RECORDS.filter(r=>r.id!==id);
+      render();
+    }else{
+      alert(data.error || '删除失败');
+    }
+  }catch(e){
+    alert('网络异常，删除失败');
+  }
 }
 
 /* ---------- 导出 CSV（Excel 可直接打开） ---------- */
